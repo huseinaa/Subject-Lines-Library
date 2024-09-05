@@ -99,7 +99,9 @@ def generate_response(subject_line: str):
     [Score, Template, Topic]
     """
 
-    response = llm_instance.generate_response(prompt=u_prompt)
+    r_prompt = "Just return the following and nothing else: [\"87\", \"3 ways to [Achieve Goal] [Emoji]\", \"Informational\"]"
+
+    response = llm_instance.generate_response(prompt=r_prompt)
 
     return response
 
