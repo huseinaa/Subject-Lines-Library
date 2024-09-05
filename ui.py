@@ -4,21 +4,22 @@ from ast import literal_eval
 from SimplerLLM.language.llm import LLM, LLMProvider
 from google.oauth2.service_account import Credentials
 import tempfile
+import json
 
 def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
-        temp_file.write(str(json_file))  
-        temp_file.flush() 
+        json.dump(json_file, temp_file) 
+        temp_file.flush()  
 
         creds = Credentials.from_service_account_file(temp_file.name, scopes=scopes)
         client = gspread.authorize(creds)
         sheet = client.open_by_key(sheet_id)
-        worksheet = sheet.get_worksheet(0) 
+        worksheet = sheet.get_worksheet(0)
 
         worksheet.update_cell(row, 1, subject_line)
-        if len(data) >= 3:  
+        if len(data) >= 3:
             worksheet.update_cell(row, 2, data[0])  # Score
             worksheet.update_cell(row, 3, data[1])  # Template
             worksheet.update_cell(row, 4, data[2])  # Topic classification
@@ -100,6 +101,8 @@ if st.button('Analyze Subject Line'):
 if st.session_state.analyzed:
     sheet_id = st.secrets["sheet_id"]
     json_file = st.secrets["client_secret_key"]
+
+    st.text(json_file)
 
     if subject_line and json_file and sheet_id:
         result1 = generate_response(subject_line)
