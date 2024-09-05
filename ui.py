@@ -11,10 +11,10 @@ def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     # Load the JSON directly from the uploaded file
     json_file_dict = json.load(json_file)
 
-    st.text(json_file_dict)  # Debugging output
-    st.text(type(json_file_dict))  # Check the type to ensure it's a dictionary
+    st.text(json_file)  # Debugging output
+    st.text(type(json_file))  # Check the type to ensure it's a dictionary
 
-    creds = Credentials.from_service_account_info(json_file_dict, scopes=scopes)
+    creds = Credentials.from_service_account_info(json_file, scopes=scopes)
     st.text("Trying to authenticate with Google Sheets...")
 
     client = gspread.authorize(creds)
