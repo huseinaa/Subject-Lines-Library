@@ -10,7 +10,7 @@ def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     # Convert the AttrDict to a standard dictionary
     json_file_dict = dict(json_file)  # Convert AttrDict to a regular dictionary
 
-    st.text("Dict function", type(json_file_dict))
+    st.text(type(json_file_dict))
 
     # Use the credentials directly from the dictionary
     creds = Credentials.from_service_account_info(json_file_dict, scopes=scopes)
