@@ -1,0 +1,4 @@
+gspread
+streamlit
+simplerllm
+google-auth
