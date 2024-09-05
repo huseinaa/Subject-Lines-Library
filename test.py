@@ -1,6 +1,5 @@
 import gspread
 import streamlit as st
-import json
 from ast import literal_eval
 from SimplerLLM.language.llm import LLM, LLMProvider
 from google.oauth2.service_account import Credentials
@@ -8,25 +7,27 @@ from google.oauth2.service_account import Credentials
 def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    # Load the JSON directly from the uploaded file
-    json_file_dict = json.load(json_file)
+    # Convert the AttrDict to a standard dictionary
+    json_file_dict = dict(json_file)  # Convert AttrDict to a regular dictionary
 
-    st.text(json_file_dict)  # Debugging output
-    st.text(type(json_file_dict))  # Check the type to ensure it's a dictionary
+    st.text(json_file_dict)
+    st.text(type(json_file_dict))
 
+    # Use the credentials directly from the dictionary
     creds = Credentials.from_service_account_info(json_file_dict, scopes=scopes)
-    st.text("Trying to authenticate with Google Sheets...")
-
+    st.text("Try")
     client = gspread.authorize(creds)
     sheet = client.open_by_key(sheet_id)
     worksheet = sheet.get_worksheet(0)
 
-    st.text("Authenticated and accessing worksheet...")
+    st.text("Try22")
 
     try:
+        # Insert subject line in the first cell of the row
         st.write(f"Updating cell ({row}, 1) with subject_line: {subject_line}")
-        worksheet.update_cell(row, 1, str(subject_line)) 
+        worksheet.update_cell(row, 1, str(subject_line))  # Convert to string
 
+        # Insert other values if present in the data list
         if len(data) >= 3:
             st.write(f"Updating cell ({row}, 2) with score: {data[0]}")
             worksheet.update_cell(row, 2, str(data[0]))  # Score, as string
@@ -110,7 +111,6 @@ st.title('Subject Lines Automation')
 
 subject_line = st.text_input('Enter your email subject line:', '')
 row = st.text_input('Enter the row you want to edit:', '')
-file = st.file_uploader('Upload your Google service account key JSON file')
 
 if 'analyzed' not in st.session_state:
     st.session_state.analyzed = False
@@ -120,23 +120,27 @@ if st.button('Analyze Subject Line'):
 
 if st.session_state.analyzed:
     sheet_id = st.secrets["sheet_id"]
-    json_file = file
+    json_file = st.secrets["client_secret_key"]
 
-    if json_file and subject_line and sheet_id:
+    st.text(json_file)
+    st.text(type(json_file))
+
+    if subject_line and json_file and sheet_id:
         result1 = generate_response(subject_line)
         result2 = generate_response(subject_line)
-
+        
         col1, col2 = st.columns(2)
         
         with col1:
             st.subheader('Result 1')
-            result1_list = literal_eval(result1)
-            st.text(result1_list)  # Debugging output
+            result1_list = literal_eval(result1) 
+            st.text(result1_list)
             st.text(type(result1_list))
             st.text_area('Output:', value=result1, height=None, disabled=True, key="Text_Area_1")
             if st.button('Add to Google Sheets.', key='save_to_sheet1'):
                 try:
                     if isinstance(result1_list, list) and len(result1_list) == 3:
+                        st.text("Entered")
                         insert_into_sheet(json_file, sheet_id, subject_line, result1_list, int(row))
                         st.success('Result 1 saved!')
                     else:
@@ -146,7 +150,7 @@ if st.session_state.analyzed:
 
         with col2:
             st.subheader('Result 2')
-            result2_list = literal_eval(result2)
+            result2_list = literal_eval(result2) 
             st.text_area('Output:', value=result2, height=None, disabled=True, key="Text_Area_2")
             if st.button('Add to Google Sheets.', key='save_to_sheet2'):
                 try:
