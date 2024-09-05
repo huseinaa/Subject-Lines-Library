@@ -10,12 +10,12 @@ def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
     # Convert the AttrDict to a standard dictionary
-    json_file = dict(json_file)
+    json_file_dict = dict(json_file)  # This converts AttrDict to a dictionary
 
     # Create a temporary file for the service account JSON
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
         # Convert the dictionary to a JSON formatted string and write to the temp file
-        json.dump(json_file, temp_file)  # Serialize the dictionary to JSON format
+        json.dump(json_file_dict, temp_file)  # Serialize the dictionary to JSON format
         temp_file.flush()  # Ensure the file is written to disk
 
         # Now use the temp file path
@@ -109,6 +109,7 @@ if st.session_state.analyzed:
     json_file = st.secrets["client_secret_key"]
 
     st.text(json_file)
+    st.text(type(json_file))
 
     if subject_line and json_file and sheet_id:
         result1 = generate_response(subject_line)
