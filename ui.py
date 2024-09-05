@@ -18,6 +18,8 @@ def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     sheet = client.open_by_key(sheet_id)
     worksheet = sheet.get_worksheet(0)
 
+    st.text("Try")
+
     try:
         # Insert subject line in the first cell of the row
         st.write(f"Updating cell ({row}, 1) with subject_line: {subject_line}")
