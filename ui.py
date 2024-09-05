@@ -3,19 +3,25 @@ import streamlit as st
 from ast import literal_eval
 from SimplerLLM.language.llm import LLM, LLMProvider
 from google.oauth2.service_account import Credentials
+import tempfile
 
 def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_file(json_file, scopes=scopes)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(sheet_id)
-    worksheet = sheet.get_worksheet(0) 
-    
-    worksheet.update_cell(row, 1, subject_line)
-    if len(data) >= 3:  
-        worksheet.update_cell(row, 2, data[0])  # Score
-        worksheet.update_cell(row, 3, data[1])  # Template
-        worksheet.update_cell(row, 4, data[2])  # Topic classification
+
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
+        temp_file.write(str(json_file))  
+        temp_file.flush() 
+
+        creds = Credentials.from_service_account_file(temp_file.name, scopes=scopes)
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key(sheet_id)
+        worksheet = sheet.get_worksheet(0) 
+
+        worksheet.update_cell(row, 1, subject_line)
+        if len(data) >= 3:  
+            worksheet.update_cell(row, 2, data[0])  # Score
+            worksheet.update_cell(row, 3, data[1])  # Template
+            worksheet.update_cell(row, 4, data[2])  # Topic classification
 
 def generate_response(subject_line: str):
     llm_instance = LLM.create(provider=LLMProvider.OPENAI, model_name="gpt-4o-mini", api_key=st.secrets["OPENAI_API_KEY"])
