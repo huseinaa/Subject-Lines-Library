@@ -93,7 +93,7 @@ if st.button('Analyze Subject Line'):
 
 if st.session_state.analyzed:
     sheet_id = st.secrets["sheet_id"]
-    json_file = st.secrets["clients_secret_key.json"]
+    json_file = st.secrets["client_secret_key"]
 
     if subject_line and json_file and sheet_id:
         result1 = generate_response(subject_line)
