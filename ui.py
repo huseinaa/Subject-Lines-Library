@@ -9,10 +9,16 @@ import json
 def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
-        json.dump(json_file, temp_file) 
-        temp_file.flush()  
+    # Convert the AttrDict to a standard dictionary
+    json_file = dict(json_file)
 
+    # Create a temporary file for the service account JSON
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
+        # Convert the dictionary to a JSON formatted string and write to the temp file
+        json.dump(json_file, temp_file)  # Serialize the dictionary to JSON format
+        temp_file.flush()  # Ensure the file is written to disk
+
+        # Now use the temp file path
         creds = Credentials.from_service_account_file(temp_file.name, scopes=scopes)
         client = gspread.authorize(creds)
         sheet = client.open_by_key(sheet_id)
