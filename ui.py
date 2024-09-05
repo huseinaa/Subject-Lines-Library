@@ -14,8 +14,8 @@ def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
 
     # Use the credentials directly from the dictionary
     creds = Credentials.from_service_account_info(json_file_dict, scopes=scopes)
-    client = gspread.authorize(creds)
     st.text("Try")
+    client = gspread.authorize(creds)
     sheet = client.open_by_key(sheet_id)
     worksheet = sheet.get_worksheet(0)
 
