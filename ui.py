@@ -18,11 +18,25 @@ def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     sheet = client.open_by_key(sheet_id)
     worksheet = sheet.get_worksheet(0)
 
-    worksheet.update_cell(row, 1, subject_line)
-    if len(data) >= 3:
-        worksheet.update_cell(row, 2, data[0])  # Score
-        worksheet.update_cell(row, 3, data[1])  # Template
-        worksheet.update_cell(row, 4, data[2])  # Topic classification
+    try:
+        # Insert subject line in the first cell of the row
+        st.write(f"Updating cell ({row}, 1) with subject_line: {subject_line}")
+        worksheet.update_cell(row, 1, str(subject_line))  # Convert to string
+
+        # Insert other values if present in the data list
+        if len(data) >= 3:
+            st.write(f"Updating cell ({row}, 2) with score: {data[0]}")
+            worksheet.update_cell(row, 2, str(data[0]))  # Score, as string
+
+            st.write(f"Updating cell ({row}, 3) with template: {data[1]}")
+            worksheet.update_cell(row, 3, str(data[1]))  # Template, as string
+
+            st.write(f"Updating cell ({row}, 4) with topic: {data[2]}")
+            worksheet.update_cell(row, 4, str(data[2]))  # Topic classification, as string
+
+        st.success(f"Data successfully inserted into row {row}.")
+    except Exception as e:
+        st.error(f"Error inserting data into Google Sheets: {e}")
 
 def generate_response(subject_line: str):
     llm_instance = LLM.create(provider=LLMProvider.OPENAI, model_name="gpt-4o-mini", api_key=st.secrets["OPENAI_API_KEY"])
