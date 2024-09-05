@@ -9,9 +9,6 @@ def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
 
     # Convert the AttrDict to a standard dictionary
     json_file_dict = dict(json_file)  # Convert AttrDict to a regular dictionary
-    
-    if 'private_key' in json_file_dict:
-        json_file_dict['private_key'] = json_file_dict['private_key'].replace('\\n', '\n')
 
     st.text(json_file_dict)
     st.text(type(json_file_dict))
