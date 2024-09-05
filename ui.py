@@ -3,32 +3,26 @@ import streamlit as st
 from ast import literal_eval
 from SimplerLLM.language.llm import LLM, LLMProvider
 from google.oauth2.service_account import Credentials
-import tempfile
-import json
 
 def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
     # Convert the AttrDict to a standard dictionary
-    json_file_dict = dict(json_file)  # This converts AttrDict to a dictionary
+    json_file_dict = dict(json_file)  # Convert AttrDict to a regular dictionary
 
-    # Create a temporary file for the service account JSON
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
-        # Convert the dictionary to a JSON formatted string and write to the temp file
-        json.dump(json_file_dict, temp_file)  # Serialize the dictionary to JSON format
-        temp_file.flush()  # Ensure the file is written to disk
+    st.text("Dict function", type(json_file_dict))
 
-        # Now use the temp file path
-        creds = Credentials.from_service_account_file(temp_file.name, scopes=scopes)
-        client = gspread.authorize(creds)
-        sheet = client.open_by_key(sheet_id)
-        worksheet = sheet.get_worksheet(0)
+    # Use the credentials directly from the dictionary
+    creds = Credentials.from_service_account_info(json_file_dict, scopes=scopes)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(sheet_id)
+    worksheet = sheet.get_worksheet(0)
 
-        worksheet.update_cell(row, 1, subject_line)
-        if len(data) >= 3:
-            worksheet.update_cell(row, 2, data[0])  # Score
-            worksheet.update_cell(row, 3, data[1])  # Template
-            worksheet.update_cell(row, 4, data[2])  # Topic classification
+    worksheet.update_cell(row, 1, subject_line)
+    if len(data) >= 3:
+        worksheet.update_cell(row, 2, data[0])  # Score
+        worksheet.update_cell(row, 3, data[1])  # Template
+        worksheet.update_cell(row, 4, data[2])  # Topic classification
 
 def generate_response(subject_line: str):
     llm_instance = LLM.create(provider=LLMProvider.OPENAI, model_name="gpt-4o-mini", api_key=st.secrets["OPENAI_API_KEY"])
