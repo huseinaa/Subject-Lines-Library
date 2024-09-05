@@ -134,6 +134,7 @@ if st.session_state.analyzed:
             if st.button('Add to Google Sheets.', key='save_to_sheet1'):
                 try:
                     if isinstance(result1_list, list) and len(result1_list) == 3:
+                        st.text("Entered")
                         insert_into_sheet(json_file, sheet_id, subject_line, result1_list, int(row))
                         st.success('Result 1 saved!')
                     else:
