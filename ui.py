@@ -111,6 +111,7 @@ st.title('Subject Lines Automation')
 
 subject_line = st.text_input('Enter your email subject line:', '')
 row = st.text_input('Enter the row you want to edit:', '')
+file = st.file_uploader('Put the file')
 
 if 'analyzed' not in st.session_state:
     st.session_state.analyzed = False
@@ -120,7 +121,8 @@ if st.button('Analyze Subject Line'):
 
 if st.session_state.analyzed:
     sheet_id = st.secrets["sheet_id"]
-    json_file = st.secrets["client_secret_key"]
+    #json_file = st.secrets["client_secret_key"]
+    json_file = file
 
     st.text(json_file)
     st.text(type(json_file))
