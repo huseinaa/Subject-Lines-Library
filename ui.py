@@ -5,16 +5,19 @@ from ast import literal_eval
 from SimplerLLM.language.llm import LLM, LLMProvider
 from google.oauth2.service_account import Credentials
 
+
 def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    # Load the JSON directly from the uploaded file
-    json_file_dict = json.load(json_file)
+    # Load the JSON content from the uploaded file
+    json_file_content = json_file.read()  # Read the file
+    json_file_dict = json.loads(json_file_content)  # Parse it as JSON
 
-    st.text(json_file)  # Debugging output
-    st.text(type(json_file))  # Check the type to ensure it's a dictionary
+    st.text(json_file_dict)  # Debugging output
+    st.text(type(json_file_dict))  # Check the type to ensure it's a dictionary
 
-    creds = Credentials.from_service_account_info(json_file, scopes=scopes)
+    # Use the credentials directly from the dictionary
+    creds = Credentials.from_service_account_info(json_file_dict, scopes=scopes)
     st.text("Trying to authenticate with Google Sheets...")
 
     client = gspread.authorize(creds)
@@ -24,9 +27,11 @@ def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     st.text("Authenticated and accessing worksheet...")
 
     try:
+        # Insert subject line in the first cell of the row
         st.write(f"Updating cell ({row}, 1) with subject_line: {subject_line}")
-        worksheet.update_cell(row, 1, str(subject_line)) 
+        worksheet.update_cell(row, 1, str(subject_line))  # Convert to string
 
+        # Insert other values if present in the data list
         if len(data) >= 3:
             st.write(f"Updating cell ({row}, 2) with score: {data[0]}")
             worksheet.update_cell(row, 2, str(data[0]))  # Score, as string
