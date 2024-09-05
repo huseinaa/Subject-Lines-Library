@@ -114,6 +114,8 @@ if st.session_state.analyzed:
         with col1:
             st.subheader('Result 1')
             result1_list = literal_eval(result1) 
+            st.text(result1_list)
+            st.text(type(result1_list))
             st.text_area('Output:', value=result1, height=None, disabled=True, key="Text_Area_1")
             if st.button('Add to Google Sheets.', key='save_to_sheet1'):
                 try:
