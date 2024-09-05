@@ -1,12 +1,8 @@
 import gspread
-import os
-from dotenv import load_dotenv
 import streamlit as st
 from ast import literal_eval
 from SimplerLLM.language.llm import LLM, LLMProvider
 from google.oauth2.service_account import Credentials
-
-load_dotenv()
 
 def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -22,7 +18,7 @@ def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
         worksheet.update_cell(row, 4, data[2])  # Topic classification
 
 def generate_response(subject_line: str):
-    llm_instance = LLM.create(provider=LLMProvider.OPENAI, model_name="gpt-4o-mini")
+    llm_instance = LLM.create(provider=LLMProvider.OPENAI, model_name="gpt-4o-mini", api_key=st.secrets["OPENAI_API_KEY"])
     u_prompt = f"""
     ##Task
 
@@ -97,7 +93,7 @@ if st.button('Analyze Subject Line'):
 
 if st.session_state.analyzed:
     sheet_id = st.secrets["sheet_id"]
-    json_file = "clients_secret_key.json"
+    json_file = st.secrets["clients_secret_key.json"]
 
     if subject_line and json_file and sheet_id:
         result1 = generate_response(subject_line)
