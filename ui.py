@@ -1,31 +1,31 @@
 import json
-import gspread
+import pymysql
 import streamlit as st
-from ast import literal_eval
 from SimplerLLM.language.llm import LLM, LLMProvider
-from google.oauth2.service_account import Credentials
 
-def insert_into_sheet(json_file, sheet_id, subject_line, data, row):
-    json_file_content = json_file.read()
-    json_file_dict = json.loads(json_file_content) 
-    
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_info(json_file_dict, scopes=scopes)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(sheet_id)
-    worksheet = sheet.get_worksheet(0)
+def insert_subject_line(db_host, username, pwd, db_name, subject_line, score, template, type):
+    try:
+        connection = pymysql.connect(
+            host=db_host,
+            user=username,
+            password=pwd,
+            db=db_name,
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        
+    except pymysql.MySQLError as e:
+        print(f"Error connecting to the database: {e}")
 
     try:
-        worksheet.update_cell(row, 1, str(subject_line))  
-        if len(data) >= 3:
-            worksheet.update_cell(row, 2, str(data[0]))  # Score
-            worksheet.update_cell(row, 3, str(data[1]))  # Template
-            worksheet.update_cell(row, 4, str(data[2]))  # Topic classification
-    except Exception as e:
-        st.error(f"Error inserting data into Google Sheets: {e}")
+        with connection.cursor() as cursor:
+            sql = "INSERT INTO `subject_lines` (`SUBJECT`, `SCORE`, `FORMULA`, `TYPE`) VALUES (%s, %s, %s, %s)"
+            cursor.execute(sql, (subject_line, score, template, type))
+        connection.commit()
+    finally:
+        connection.close()
 
 def generate_response(subject_line: str):
-    llm_instance = LLM.create(provider=LLMProvider.OPENAI, model_name="gpt-4o-mini", api_key=st.secrets["OPENAI_API_KEY"])
+    llm_instance = LLM.create(provider=LLMProvider.OPENAI, model_name="gpt-4o-mini")
     u_prompt = f"""
     ##Task
 
@@ -55,35 +55,57 @@ def generate_response(subject_line: str):
         Higher scores in Scannability, Sentiment, and Emojis will positively contribute to effectiveness, while higher scores in Spam Triggers and All Caps Words will negatively impact effectiveness.
             
     3. Subject Line Type Classification:
-    Classify the provided subject line into one of the following types: Informational, Announcement, Promotion, Generic, Cold, or Survey.
+    Classify the provided subject line into only one of the following types: Informational, Announcement, Promotion, Generic, Cold, or Survey.
 
     ##Output Examples:
 
     Input: "2 Questions YouTubers Need To Stop Asking"
-    ["90", "[X] Questions [Audience] Need To Stop Asking", "Informational"]
+    {{
+        "subject": "2 Questions YouTubers Need To Stop Asking",
+        "score": "90",
+        "template": "[X] Questions [Audience] Need To Stop Asking",
+        "category": "Informational"
+    }}
 
     Input: "I need to give you more money"
-    ["76", "I need to give you more [X]", "Announcement"]
+    {{
+        "subject": "I need to give you more money",
+        "score": "76",
+        "template": "I need to give you more [X]",
+        "category": "Announcement"
+    }}
 
     Input: "👔 3 years in 3 hours"
-    ["91", "[Emoji] [X] years in [X] hours", "Generic"]
+    {{
+        "subject": "👔 3 years in 3 hours",
+        "score": "91",
+        "template": "[Emoji] [X] years in [X] hours",
+        "category": "Generic"
+    }}
 
     Input: "3 ways to trick AI content detectors 🤖"
-    ["87", "3 ways to [Achieve Goal] [Emoji]", "Informational"]
+    {{
+        "subject": "3 ways to trick AI content detectors 🤖",
+        "score": "87",
+        "template": "3 ways to [Achieve Goal] [Emoji]",
+        "category": "Informational"
+    }}
 
     Input: "Simple Way to Boost Conversions with Your Email Marketing"
-    ["88", "Simple Way to [Goal] with Your [Type of Marketing]", "Promotion"]
+    {{
+        "subject": "Simple Way to Boost Conversions with Your Email Marketing",
+        "score": "88",
+        "template": "Simple Way to [Goal] with Your [Type of Marketing]",
+        "category": "Promotion"
+    }}
 
     ##INPUT
 
     Subject Line: ```[{subject_line}]```
 
     ##OUTPUT FORMAT
-    The output should be in a list format as show below and nothing else.
-    [Score, Template, Topic]
+    The output should be in a json format as show in the output examples above and nothing else.
     """
-
-    r_prompt = "Just return the following and nothing else: [\"87\", \"3 ways to [Achieve Goal] [Emoji]\", \"Informational\"]"
 
     response = llm_instance.generate_response(prompt=u_prompt)
 
@@ -92,8 +114,6 @@ def generate_response(subject_line: str):
 st.title('Subject Lines Automation')
 
 subject_line = st.text_input('Enter your email subject line:', '')
-row = st.text_input('Enter the row you want to edit:', '')
-file = st.file_uploader('Upload the Google service account key JSON file')
 
 if 'analyzed' not in st.session_state:
     st.session_state.analyzed = False
@@ -102,23 +122,25 @@ if st.button('Analyze Subject Line'):
     st.session_state.analyzed = True
 
 if st.session_state.analyzed:
-    sheet_id = st.secrets["sheet_id"]
-    json_file = file
+    host=st.secrets["host"]
+    user=st.secrets["user"]
+    password=st.secrets["password"]
+    db=st.secrets["db"]
 
-    if json_file and subject_line and sheet_id:
+    if subject_line:
         result1 = generate_response(subject_line)
         result2 = generate_response(subject_line)
-
+        
         col1, col2 = st.columns(2)
         
         with col1:
             st.subheader('Result 1')
-            result1_list = literal_eval(result1)
+            result1_json = json.loads(result1)
             st.text_area('Output:', value=result1, height=None, disabled=True, key="Text_Area_1")
-            if st.button('Add to Google Sheets.', key='save_to_sheet1'):
+            if st.button('Add to Database.', key='save_to_db1'):
                 try:
-                    if isinstance(result1_list, list) and len(result1_list) == 3:
-                        insert_into_sheet(json_file, sheet_id, subject_line, result1_list, int(row))
+                    if isinstance(result1_json, dict):
+                        insert_subject_line(host, user, password, db, subject_line, result1_json['score'], result1_json['template'], result1_json['category'])
                         st.success('Result 1 saved!')
                     else:
                         st.error('Result 1 format is incorrect or missing data.')
@@ -127,16 +149,16 @@ if st.session_state.analyzed:
 
         with col2:
             st.subheader('Result 2')
-            result2_list = literal_eval(result2)
+            result2_json = json.loads(result2)
             st.text_area('Output:', value=result2, height=None, disabled=True, key="Text_Area_2")
-            if st.button('Add to Google Sheets.', key='save_to_sheet2'):
+            if st.button('Add to Database.', key='save_to_db2'):
                 try:
-                    if isinstance(result2_list, list) and len(result2_list) == 3:
-                        insert_into_sheet(json_file, sheet_id, subject_line, result2_list, int(row))
+                    if isinstance(result2_json, dict):
+                        insert_subject_line(host, user, password, db, subject_line, result1_json['score'], result1_json['template'], result1_json['category'])
                         st.success('Result 2 saved!')
                     else:
                         st.error('Result 2 format is incorrect or missing data.')
                 except Exception as e:
                     st.error(f'Error processing result 2: {e}')
     else:
-        st.error('Please enter a subject line and Google Sheets configuration.')
+        st.error('Please enter a subject line.')
